@@ -28,6 +28,7 @@ function App() {
   const [selected, setSelected] = useState<Selection>(null)
   const [zoom, setZoom] = useState(0.72)
   const [pageCount, setPageCount] = useState(0)
+  const [previewError, setPreviewError] = useState<string | null>(null)
   const [notice, setNotice] = useState('Listo para diseñar')
   const fileInput = useRef<HTMLInputElement>(null)
   const projectInput = useRef<HTMLInputElement>(null)
@@ -97,9 +98,9 @@ function App() {
       <section className="preview-panel">
         <div className="panel-title"><span>PREVIEW A4</span><label className="zoom">Zoom <input type="range" min="0.45" max="1" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /> {Math.round(zoom * 100)}%</label></div>
         <div className="paper-canvas">
-          <PagedPreview html={renderedDocument} style={project.style} zoom={zoom} onSelect={selectBlock} onPageCount={setPageCount} />
+          <PagedPreview html={renderedDocument} style={project.style} zoom={zoom} onSelect={selectBlock} onPageCount={setPageCount} onError={setPreviewError} />
         </div>
-        <footer className="preview-footer">{pageCount ? `${pageCount} página${pageCount === 1 ? '' : 's'}` : 'Paginando…'} <span>Desplazate entre las hojas y hacé clic sobre un bloque para editarlo</span></footer>
+        <footer className="preview-footer">{previewError ? <span className="preview-error">{previewError}</span> : pageCount ? `${pageCount} página${pageCount === 1 ? '' : 's'}` : 'Paginando…'} <span>Desplazate entre las hojas y hacé clic sobre un bloque para editarlo</span></footer>
       </section>
 
       <aside className="inspector-panel">

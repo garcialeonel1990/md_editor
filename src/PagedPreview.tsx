@@ -8,9 +8,10 @@ interface Props {
   zoom: number
   onSelect: (event: React.MouseEvent<HTMLElement>) => void
   onPageCount: (count: number) => void
+  onError: (message: string | null) => void
 }
 
-export default function PagedPreview({ html, style, zoom, onSelect, onPageCount }: Props) {
+export default function PagedPreview({ html, style, zoom, onSelect, onPageCount, onError }: Props) {
   const target = useRef<HTMLDivElement>(null)
   const run = useRef(0)
 
@@ -20,6 +21,7 @@ export default function PagedPreview({ html, style, zoom, onSelect, onPageCount 
     const renderTarget = target.current
     renderTarget.replaceChildren()
     onPageCount(0)
+    onError(null)
 
     const source = document.createElement('article')
     source.className = 'print-source'
@@ -41,22 +43,24 @@ export default function PagedPreview({ html, style, zoom, onSelect, onPageCount 
       .manual-spacer { break-inside: avoid; }
       .manual-page-break { break-after: page; page-break-after: always; height: 0; }
     `
-    const cssUrl = URL.createObjectURL(new Blob([pageCss], { type: 'text/css' }))
     const previewer = new Previewer()
 
-    previewer.preview(source, [cssUrl], renderTarget).then(() => {
-      URL.revokeObjectURL(cssUrl)
+    // Supplying the stylesheet in-memory avoids a second network request. This
+    // matters on static hosts such as GitHub Pages and keeps pagination local.
+    previewer.preview(source, [{ [window.location.href]: pageCss }], renderTarget).then(() => {
       if (run.current !== currentRun) return
       onPageCount(renderTarget.querySelectorAll('.pagedjs_page').length)
-    }).catch(() => {
-      URL.revokeObjectURL(cssUrl)
+    }).catch((error: unknown) => {
+      if (run.current !== currentRun) return
+      const detail = error instanceof Error ? error.message : 'Error desconocido'
+      onError(`No se pudo paginar el documento: ${detail}`)
     })
 
     return () => {
       run.current += 1
       renderTarget.replaceChildren()
     }
-  }, [html, style, onPageCount])
+  }, [html, style, onPageCount, onError])
 
   return <div className="paged-preview-zoom" style={{ zoom }}><div ref={target} className="paged-preview" onClick={onSelect} /></div>
 }
