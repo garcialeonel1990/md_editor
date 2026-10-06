@@ -59,6 +59,15 @@ function App() {
     return { ...current, overrides: { ...current.overrides, [id]: { ...current.overrides[id], id, marginTop: currentMargin + line } } }
   })
 
+  const removeLineBefore = (id: string, type: string) => setProject((current) => {
+    const heading = type === 'h1' || type === 'h2' || type === 'h3' ? current.style.headings[type] : undefined
+    const baseMargin = heading?.marginTop ?? current.style.body.marginTop
+    const currentMargin = current.overrides[id]?.marginTop ?? baseMargin
+    const line = current.style.body.fontSize * current.style.body.lineHeight
+    const marginTop = Math.max(baseMargin, currentMargin - line)
+    return { ...current, overrides: { ...current.overrides, [id]: { ...current.overrides[id], id, marginTop } } }
+  })
+
   const openMarkdown = async (file: File) => {
     const markdown = await file.text()
     setProject((current) => ({ ...current, name: file.name.replace(/\.md$/i, ''), markdown, overrides: {} }))
@@ -108,9 +117,9 @@ function App() {
       <section className="preview-panel">
         <div className="panel-title"><span>PREVIEW A4</span><label className="zoom">Zoom <input type="range" min="0.45" max="1" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /> {Math.round(zoom * 100)}%</label></div>
         <div className="paper-canvas">
-          <PagedPreview html={renderedDocument} style={project.style} overrides={project.overrides} zoom={zoom} onSelect={selectBlock} onInsertLine={addLineBefore} onPageCount={setPageCount} onError={setPreviewError} />
+          <PagedPreview html={renderedDocument} style={project.style} overrides={project.overrides} zoom={zoom} onSelect={selectBlock} onInsertLine={addLineBefore} onRemoveLine={removeLineBefore} onPageCount={setPageCount} onError={setPreviewError} />
         </div>
-        <footer className="preview-footer">{previewError ? <span className="preview-error">{previewError}</span> : pageCount ? `${pageCount} página${pageCount === 1 ? '' : 's'}` : 'Paginando…'} <span>Desplazate entre las hojas y hacé clic sobre un bloque para editarlo</span></footer>
+        <footer className="preview-footer">{previewError ? <span className="preview-error">{previewError}</span> : pageCount ? `${pageCount} página${pageCount === 1 ? '' : 's'}` : 'Paginando…'} <span>Enter baja una línea · Backspace sube una línea</span></footer>
       </section>
 
       <aside className="inspector-panel">

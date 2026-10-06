@@ -8,6 +8,7 @@ interface Props {
   zoom: number
   onSelect: (event: React.MouseEvent<HTMLElement>) => void
   onInsertLine: (id: string, type: string) => void
+  onRemoveLine: (id: string, type: string) => void
   onPageCount: (count: number) => void
   onError: (message: string | null) => void
 }
@@ -24,7 +25,7 @@ const declarations = (value: Partial<TextStyle>) => [
   value.pageBreakAfter && 'break-after:page',
 ].filter(Boolean).join(';')
 
-export default function PagedPreview({ html, style, overrides, zoom, onSelect, onInsertLine, onPageCount, onError }: Props) {
+export default function PagedPreview({ html, style, overrides, zoom, onSelect, onInsertLine, onRemoveLine, onPageCount, onError }: Props) {
   const target = useRef<HTMLDivElement>(null)
   const run = useRef(0)
   const activeBlockId = useRef<string | null>(null)
@@ -161,12 +162,13 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Enter') return
+    if (event.key !== 'Enter' && event.key !== 'Backspace') return
     const block = (event.target as HTMLElement).closest<HTMLElement>('[data-block-id]')
     if (!block?.dataset.blockId || !block.dataset.blockType) return
     event.preventDefault()
     captureViewportAnchor()
-    onInsertLine(block.dataset.blockId, block.dataset.blockType)
+    if (event.key === 'Enter') onInsertLine(block.dataset.blockId, block.dataset.blockType)
+    else onRemoveLine(block.dataset.blockId, block.dataset.blockType)
   }
 
   return <div className="paged-preview-zoom" style={{ zoom }}><div ref={target} className="paged-preview" onClick={handleClick} onKeyDown={handleKeyDown} /></div>
