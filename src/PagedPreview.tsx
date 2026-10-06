@@ -38,6 +38,7 @@ export default function PagedPreview({ html, style, zoom, onSelect, onPageCount 
       .print-source th, .print-source td { border: 1px solid #cbd5e1; padding: 5px 7px; }
       .print-source th { background: #f1f5f9; } .print-source img { max-width: 100%; max-height: 120mm; }
       .print-source [data-block-id] { break-inside: avoid; }
+      .manual-spacer { break-inside: avoid; }
       .manual-page-break { break-after: page; page-break-after: always; height: 0; }
     `
     const cssUrl = URL.createObjectURL(new Blob([pageCss], { type: 'text/css' }))

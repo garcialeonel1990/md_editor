@@ -91,7 +91,7 @@ function App() {
       <aside className="editor-panel">
         <div className="panel-title"><span>MARKDOWN</span><button className="text-button" onClick={() => setProject({ ...project, markdown: `${project.markdown}\n\n<!-- pagebreak -->\n\n` })}>+ Salto de página</button></div>
         <CodeMirror value={project.markdown} height="calc(100vh - 168px)" extensions={[markdown()]} onChange={(markdown) => { setProject({ ...project, markdown }); setSelected(null) }} theme="light" basicSetup={{ lineNumbers: true, foldGutter: false }} />
-        <div className="editor-footer"><button className="text-button" onClick={() => projectInput.current?.click()}>Importar .mdprint</button><span>{notice}</span></div>
+        <div className="editor-footer"><button className="text-button" onClick={() => projectInput.current?.click()}>Importar .mdprint</button><span>Enter extra = espacio · {notice}</span></div>
       </aside>
 
       <section className="preview-panel">

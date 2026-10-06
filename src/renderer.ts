@@ -21,19 +21,28 @@ const css = (style: Partial<TextStyle>) => [
 
 export function renderDocument(markdown: string, style: DocumentStyle, overrides: Record<string, BlockOverride>): string {
   let index = 0
-  const segments = markdown.split(/<!--\s*pagebreak\s*-->/i)
+  const segments = markdown.replaceAll('\r\n', '\n').split(/<!--\s*pagebreak\s*-->/i)
   return segments.map((segment) => {
-    const source = DOMPurify.sanitize(parser.render(segment))
-    const document = new DOMParser().parseFromString(source, 'text/html')
-    Array.from(document.body.children).forEach((element) => {
-      if (!blockTags.has(element.tagName)) return
-      const id = `block-${index++}`
-      const tag = element.tagName.toLowerCase()
-      const base = tag === 'p' ? { marginBottom: style.body.paragraphSpacing } : tag in style.headings ? style.headings[tag as keyof typeof style.headings] : {}
-      element.setAttribute('data-block-id', id)
-      element.setAttribute('data-block-type', tag)
-      element.setAttribute('style', css({ ...base, ...overrides[id] }))
-    })
-    return document.body.innerHTML
+    // Markdown needs one blank line to separate blocks. Further empty lines are
+    // layout intent, so preserve them as visible vertical space in the preview.
+    return segment.split(/(\n{3,})/).map((part) => {
+      if (/^\n{3,}$/.test(part)) {
+        const extraLines = part.length - 2
+        const height = extraLines * style.body.fontSize * style.body.lineHeight
+        return `<div class="manual-spacer" style="height:${height}pt" aria-hidden="true"></div>`
+      }
+      const source = DOMPurify.sanitize(parser.render(part))
+      const document = new DOMParser().parseFromString(source, 'text/html')
+      Array.from(document.body.children).forEach((element) => {
+        if (!blockTags.has(element.tagName)) return
+        const id = `block-${index++}`
+        const tag = element.tagName.toLowerCase()
+        const base = tag === 'p' ? { marginBottom: style.body.paragraphSpacing } : tag in style.headings ? style.headings[tag as keyof typeof style.headings] : {}
+        element.setAttribute('data-block-id', id)
+        element.setAttribute('data-block-type', tag)
+        element.setAttribute('style', css({ ...base, ...overrides[id] }))
+      })
+      return document.body.innerHTML
+    }).join('')
   }).join('<div class="manual-page-break" aria-hidden="true"></div>')
 }
