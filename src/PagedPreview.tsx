@@ -38,6 +38,9 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
     const scrollContainer = renderTarget.closest<HTMLElement>('.paper-canvas')
     const previousScrollTop = scrollContainer?.scrollTop ?? 0
     const blockToRestore = activeBlockId.current
+    const previousBlockTop = blockToRestore
+      ? Array.from(renderTarget.querySelectorAll<HTMLElement>('[data-block-id]')).find((block) => block.dataset.blockId === blockToRestore)?.getBoundingClientRect().top
+      : undefined
     renderTarget.replaceChildren()
     onPageCount(0)
     onError(null)
@@ -105,8 +108,15 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
             const selectedBlock = blockToRestore
               ? Array.from(renderTarget.querySelectorAll<HTMLElement>('[data-block-id]')).find((block) => block.dataset.blockId === blockToRestore)
               : null
+            if (scrollContainer && selectedBlock && previousBlockTop !== undefined) {
+              // The empty intermediate render may clamp scrollTop to zero.
+              // Re-anchor to the selected block's former on-screen position,
+              // which also works when pagination moves it to another page.
+              scrollContainer.scrollTop = Math.max(0, scrollContainer.scrollTop + selectedBlock.getBoundingClientRect().top - previousBlockTop)
+            } else if (scrollContainer) {
+              scrollContainer.scrollTop = previousScrollTop
+            }
             selectedBlock?.focus({ preventScroll: true })
-            if (scrollContainer) scrollContainer.scrollTop = previousScrollTop
           })
         }
       } catch (error) {
