@@ -28,6 +28,17 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
   const target = useRef<HTMLDivElement>(null)
   const run = useRef(0)
   const activeBlockId = useRef<string | null>(null)
+  const viewportAnchor = useRef<{ id: string; top: number; scrollTop: number } | null>(null)
+
+  const captureViewportAnchor = () => {
+    const renderTarget = target.current
+    const id = activeBlockId.current
+    const scrollContainer = renderTarget?.closest<HTMLElement>('.paper-canvas')
+    const block = id ? Array.from(renderTarget?.querySelectorAll<HTMLElement>('[data-block-id]') ?? []).find((element) => element.dataset.blockId === id) : null
+    if (id && block && scrollContainer) {
+      viewportAnchor.current = { id, top: block.getBoundingClientRect().top, scrollTop: scrollContainer.scrollTop }
+    }
+  }
 
   useEffect(() => {
     if (!target.current) return
@@ -36,11 +47,10 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
     // Rebuilding the A4 pages must not make someone lose their place while
     // nudging an element several lines down.
     const scrollContainer = renderTarget.closest<HTMLElement>('.paper-canvas')
-    const previousScrollTop = scrollContainer?.scrollTop ?? 0
-    const blockToRestore = activeBlockId.current
-    const previousBlockTop = blockToRestore
-      ? Array.from(renderTarget.querySelectorAll<HTMLElement>('[data-block-id]')).find((block) => block.dataset.blockId === blockToRestore)?.getBoundingClientRect().top
-      : undefined
+    const anchor = viewportAnchor.current
+    const previousScrollTop = anchor?.scrollTop ?? scrollContainer?.scrollTop ?? 0
+    const blockToRestore = anchor?.id ?? activeBlockId.current
+    const previousBlockTop = anchor?.top
     renderTarget.replaceChildren()
     onPageCount(0)
     onError(null)
@@ -126,7 +136,11 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
       }
     }
     void render()
-    return () => { run.current += 1; renderTarget.replaceChildren() }
+    return () => {
+      captureViewportAnchor()
+      run.current += 1
+      renderTarget.replaceChildren()
+    }
   }, [html, style, overrides, onPageCount, onError])
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -135,6 +149,7 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
       activeBlockId.current = block.dataset.blockId ?? null
       block.tabIndex = 0
       block.focus()
+      captureViewportAnchor()
     }
     onSelect(event)
   }
@@ -144,6 +159,7 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
     const block = (event.target as HTMLElement).closest<HTMLElement>('[data-block-id]')
     if (!block?.dataset.blockId || !block.dataset.blockType) return
     event.preventDefault()
+    captureViewportAnchor()
     onInsertLine(block.dataset.blockId, block.dataset.blockType)
   }
 
