@@ -7,6 +7,7 @@ interface Props {
   overrides: Record<string, BlockOverride>
   zoom: number
   onSelect: (event: React.MouseEvent<HTMLElement>) => void
+  onInsertLine: (id: string, type: string) => void
   onPageCount: (count: number) => void
   onError: (message: string | null) => void
 }
@@ -23,7 +24,7 @@ const declarations = (value: Partial<TextStyle>) => [
   value.pageBreakAfter && 'break-after:page',
 ].filter(Boolean).join(';')
 
-export default function PagedPreview({ html, style, overrides, zoom, onSelect, onPageCount, onError }: Props) {
+export default function PagedPreview({ html, style, overrides, zoom, onSelect, onInsertLine, onPageCount, onError }: Props) {
   const target = useRef<HTMLDivElement>(null)
   const run = useRef(0)
 
@@ -102,5 +103,19 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
     return () => { run.current += 1; renderTarget.replaceChildren() }
   }, [html, style, overrides, onPageCount, onError])
 
-  return <div className="paged-preview-zoom" style={{ zoom }}><div ref={target} className="paged-preview" onClick={onSelect} /></div>
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    const block = (event.target as HTMLElement).closest<HTMLElement>('[data-block-id]')
+    if (block) { block.tabIndex = 0; block.focus() }
+    onSelect(event)
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Enter') return
+    const block = (event.target as HTMLElement).closest<HTMLElement>('[data-block-id]')
+    if (!block?.dataset.blockId || !block.dataset.blockType) return
+    event.preventDefault()
+    onInsertLine(block.dataset.blockId, block.dataset.blockType)
+  }
+
+  return <div className="paged-preview-zoom" style={{ zoom }}><div ref={target} className="paged-preview" onClick={handleClick} onKeyDown={handleKeyDown} /></div>
 }
