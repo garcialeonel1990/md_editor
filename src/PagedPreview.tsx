@@ -27,11 +27,17 @@ const declarations = (value: Partial<TextStyle>) => [
 export default function PagedPreview({ html, style, overrides, zoom, onSelect, onInsertLine, onPageCount, onError }: Props) {
   const target = useRef<HTMLDivElement>(null)
   const run = useRef(0)
+  const activeBlockId = useRef<string | null>(null)
 
   useEffect(() => {
     if (!target.current) return
     const currentRun = ++run.current
     const renderTarget = target.current
+    // Rebuilding the A4 pages must not make someone lose their place while
+    // nudging an element several lines down.
+    const scrollContainer = renderTarget.closest<HTMLElement>('.paper-canvas')
+    const previousScrollTop = scrollContainer?.scrollTop ?? 0
+    const blockToRestore = activeBlockId.current
     renderTarget.replaceChildren()
     onPageCount(0)
     onError(null)
@@ -92,7 +98,17 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
           }
         }
         if (pageCount === 0) newPage()
-        if (run.current === currentRun) onPageCount(pageCount)
+        if (run.current === currentRun) {
+          onPageCount(pageCount)
+          requestAnimationFrame(() => {
+            if (run.current !== currentRun) return
+            const selectedBlock = blockToRestore
+              ? Array.from(renderTarget.querySelectorAll<HTMLElement>('[data-block-id]')).find((block) => block.dataset.blockId === blockToRestore)
+              : null
+            selectedBlock?.focus({ preventScroll: true })
+            if (scrollContainer) scrollContainer.scrollTop = previousScrollTop
+          })
+        }
       } catch (error) {
         if (run.current !== currentRun) return
         const detail = error instanceof Error ? error.message : 'Error desconocido'
@@ -105,7 +121,11 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     const block = (event.target as HTMLElement).closest<HTMLElement>('[data-block-id]')
-    if (block) { block.tabIndex = 0; block.focus() }
+    if (block) {
+      activeBlockId.current = block.dataset.blockId ?? null
+      block.tabIndex = 0
+      block.focus()
+    }
     onSelect(event)
   }
 

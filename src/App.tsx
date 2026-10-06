@@ -122,7 +122,7 @@ function App() {
           <label className="check"><input type="checkbox" checked={(activeStyle.fontWeight ?? 400) >= 600} onChange={(event) => changeOverride({ fontWeight: event.target.checked ? 700 : 400 })} /> Negrita</label>
           <label className="check"><input type="checkbox" checked={activeStyle.fontStyle === 'italic'} onChange={(event) => changeOverride({ fontStyle: event.target.checked ? 'italic' : 'normal' })} /> Cursiva</label>
           <label className="check"><input type="checkbox" checked={Boolean(activeStyle.pageBreakBefore)} onChange={(event) => changeOverride({ pageBreakBefore: event.target.checked })} /> Salto antes</label>
-          <button className="secondary small" onClick={() => addLineBefore(selected.id, selected.type)}>+ Agregar línea arriba</button>
+          <button className="secondary small" onClick={() => addLineBefore(selected.id, selected.type)}>↓ Bajar 1 línea</button>
           <button className="secondary small" onClick={() => setProject({ ...project, overrides: Object.fromEntries(Object.entries(project.overrides).filter(([id]) => id !== selected.id)) })}>Quitar override</button>
         </section> : <section className="inspector-section"><span className="eyebrow">DOCUMENTO</span><p className="muted">Selecciona un bloque en la hoja para aplicar un override local.</p></section>}
 
