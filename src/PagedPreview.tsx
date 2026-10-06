@@ -72,6 +72,10 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
           .visual-page-content h1 { color:#172554; ${declarations(style.headings.h1)} }
           .visual-page-content h2 { color:#3730a3; ${declarations(style.headings.h2)} }
           .visual-page-content h3 { ${declarations(style.headings.h3)} }
+          /* A paragraph's manual offset belongs to the preceding page. If it
+             becomes the first block on a new A4 sheet, start at that sheet's
+             actual top margin instead of carrying the accumulated blank area. */
+          .visual-page-content > [data-block-id].page-leading-block { margin-top:0 !important; }
           .visual-page-content blockquote { border-left:3px solid #818cf8; padding-left:12px; color:#475569; margin-left:0; }
           .visual-page-content pre { background:#f1f5f9; padding:11px; border-radius:5px; overflow:auto; text-align:left; white-space:pre-wrap; }
           .visual-page-content table { border-collapse:collapse; width:100%; text-align:left; }
@@ -112,6 +116,7 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
           }
         }
         if (pageCount === 0) newPage()
+        renderTarget.querySelectorAll<HTMLElement>('.visual-page-content > [data-block-id]:first-child').forEach((block) => block.classList.add('page-leading-block'))
         if (run.current === currentRun) {
           onPageCount(pageCount)
           requestAnimationFrame(() => {
