@@ -62,7 +62,7 @@ function Field({ label, value, onChange, min = 0, step = 1 }: { label: string; v
 function App() {
   const [project, setProject] = useState<DocumentProject>(initialProject)
   const [selected, setSelected] = useState<Selection>(null)
-  const [zoom, setZoom] = useState(0.72)
+  const [zoom, setZoom] = useState(1)
   const [pageCount, setPageCount] = useState(0)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [showMarkdown, setShowMarkdown] = useState(false)
@@ -171,7 +171,7 @@ function App() {
       </aside>
 
       <section className="preview-panel">
-        <div className="panel-title"><span>PREVIEW A4</span><label className="zoom">Zoom <input type="range" min="0.45" max="1" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /> {Math.round(zoom * 100)}%</label></div>
+        <div className="panel-title"><span>PREVIEW A4</span><label className="zoom">Zoom <input type="range" min="0.5" max="2" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /> {Math.round(zoom * 100)}%</label></div>
         <div className="paper-canvas">
           <PagedPreview html={renderedDocument} style={project.style} overrides={project.overrides} zoom={zoom} onSelect={selectBlock} onInsertLine={addLineBefore} onRemoveLine={removeLineBefore} onPageCount={setPageCount} onError={setPreviewError} />
         </div>
