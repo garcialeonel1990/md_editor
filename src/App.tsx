@@ -11,6 +11,42 @@ const fonts = ['Inter, Arial, sans-serif', 'Arial, sans-serif', 'Helvetica, sans
 
 type Selection = { id: string; type: string; text: string } | null
 
+type SourceRange = { start: number; end: number; source: string }
+
+const normaliseWithOffsets = (value: string) => {
+  let normalised = ''
+  const offsets: number[] = []
+  let previousWasSpace = false
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]
+    if ('*_`[]()!#>'.includes(character)) continue
+    if (/\s/.test(character)) {
+      if (!previousWasSpace) { normalised += ' '; offsets.push(index); previousWasSpace = true }
+      continue
+    }
+    normalised += character
+    offsets.push(index)
+    previousWasSpace = false
+  }
+  while (normalised.startsWith(' ')) { normalised = normalised.slice(1); offsets.shift() }
+  while (normalised.endsWith(' ')) { normalised = normalised.slice(0, -1); offsets.pop() }
+  return { normalised, offsets }
+}
+
+const findSourceRange = (markdown: string, renderedText: string): SourceRange | null => {
+  const needle = normaliseWithOffsets(renderedText).normalised
+  const haystack = normaliseWithOffsets(markdown)
+  const match = haystack.normalised.indexOf(needle)
+  if (match < 0 || !needle) return null
+  const first = haystack.offsets[match]
+  const last = haystack.offsets[match + needle.length - 1]
+  if (first === undefined || last === undefined) return null
+  const start = markdown.lastIndexOf('\n\n', first) + 2
+  const followingBreak = markdown.indexOf('\n\n', last)
+  const end = followingBreak < 0 ? markdown.length : followingBreak
+  return { start, end, source: markdown.slice(start, end) }
+}
+
 const download = (name: string, value: string, type: string) => {
   const anchor = document.createElement('a')
   anchor.href = URL.createObjectURL(new Blob([value], { type }))
@@ -30,6 +66,8 @@ function App() {
   const [pageCount, setPageCount] = useState(0)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [showMarkdown, setShowMarkdown] = useState(false)
+  const [editingSelection, setEditingSelection] = useState(false)
+  const [selectionDraft, setSelectionDraft] = useState('')
   const [notice, setNotice] = useState('Listo para diseñar')
   const fileInput = useRef<HTMLInputElement>(null)
   const projectInput = useRef<HTMLInputElement>(null)
@@ -82,10 +120,28 @@ function App() {
     } catch { setNotice('El archivo .mdprint no es válido') }
   }
 
+  useEffect(() => {
+    setSelectionDraft(selected?.text ?? '')
+    setEditingSelection(false)
+  }, [selected?.id])
+
   const selectBlock = (event: React.MouseEvent<HTMLElement>) => {
     const element = (event.target as HTMLElement).closest<HTMLElement>('[data-block-id]')
     if (!element) return
-    setSelected({ id: element.dataset.blockId!, type: element.dataset.blockType!, text: element.textContent?.slice(0, 80) ?? '' })
+    setSelected({ id: element.dataset.blockId!, type: element.dataset.blockType!, text: element.textContent?.trim() ?? '' })
+  }
+
+  const updateSelectedMarkdown = (mode: 'edit' | 'delete') => {
+    if (!selected) return
+    const range = findSourceRange(project.markdown, selected.text)
+    if (!range) { setNotice('No se pudo ubicar este bloque en el Markdown original'); return }
+    const heading = range.source.match(/^\s*(#{1,6})\s+/)
+    const replacement = mode === 'delete' ? '' : `${heading?.[1] ? `${heading[1]} ` : ''}${selectionDraft.trim()}`
+    const markdown = `${project.markdown.slice(0, range.start)}${replacement}${project.markdown.slice(range.end)}`.replace(/\n{3,}/g, '\n\n')
+    setProject((current) => ({ ...current, markdown, overrides: {} }))
+    setSelected(null)
+    setShowMarkdown(true)
+    setNotice(mode === 'delete' ? 'Elemento eliminado del Markdown original' : 'Contenido actualizado en el Markdown original')
   }
 
   const save = async () => { await saveLocal(project); setNotice('Proyecto guardado en este navegador') }
@@ -126,7 +182,7 @@ function App() {
       <aside className="inspector-panel">
         <div className="panel-title"><span>DISEÑO</span></div>
         {selected && activeStyle ? <section className="inspector-section selection-card">
-          <span className="eyebrow">ELEMENTO SELECCIONADO</span><strong>{selected.type.toUpperCase()}</strong><p>{selected.text || 'Bloque vacío'}</p>
+          <span className="eyebrow">ELEMENTO SELECCIONADO</span><strong>{selected.type.toUpperCase()}</strong><p>{selected.text.slice(0, 110) || 'Bloque vacío'}</p>
           <Field label="Tamaño (pt)" value={activeStyle.fontSize ?? 11} onChange={(fontSize) => changeOverride({ fontSize })} />
           <label className="field"><span>Alineación</span><select value={activeStyle.textAlign ?? 'left'} onChange={(event) => changeOverride({ textAlign: event.target.value as TextStyle['textAlign'] })}><option value="left">Izquierda</option><option value="center">Centro</option><option value="right">Derecha</option><option value="justify">Justificado</option></select></label>
           <label className="check"><input type="checkbox" checked={(activeStyle.fontWeight ?? 400) >= 600} onChange={(event) => changeOverride({ fontWeight: event.target.checked ? 700 : 400 })} /> Negrita</label>
@@ -134,6 +190,8 @@ function App() {
           <label className="check"><input type="checkbox" checked={Boolean(activeStyle.pageBreakBefore)} onChange={(event) => changeOverride({ pageBreakBefore: event.target.checked })} /> Salto antes</label>
           <button className="secondary small" onClick={() => addLineBefore(selected.id, selected.type)}>↓ Bajar 1 línea</button>
           <button className="secondary small" onClick={() => setProject({ ...project, overrides: Object.fromEntries(Object.entries(project.overrides).filter(([id]) => id !== selected.id)) })}>Quitar override</button>
+          {editingSelection ? <div className="content-editor"><textarea value={selectionDraft} onChange={(event) => setSelectionDraft(event.target.value)} aria-label="Contenido del elemento" /><button className="secondary small" onClick={() => updateSelectedMarkdown('edit')}>Guardar en .md</button></div> : <button className="secondary small" onClick={() => setEditingSelection(true)}>Editar contenido</button>}
+          <button className="danger small" onClick={() => updateSelectedMarkdown('delete')}>Eliminar elemento</button>
         </section> : <section className="inspector-section"><span className="eyebrow">DOCUMENTO</span><p className="muted">Selecciona un bloque en la hoja para aplicar un override local.</p></section>}
 
         <section className="inspector-section"><h2>Página</h2><div className="field-grid"><Field label="Superior mm" value={project.style.margins.top} onChange={(top) => setProject({ ...project, style: { ...project.style, margins: { ...project.style.margins, top } } })} /><Field label="Inferior mm" value={project.style.margins.bottom} onChange={(bottom) => setProject({ ...project, style: { ...project.style, margins: { ...project.style.margins, bottom } } })} /><Field label="Izquierdo mm" value={project.style.margins.left} onChange={(left) => setProject({ ...project, style: { ...project.style, margins: { ...project.style.margins, left } } })} /><Field label="Derecho mm" value={project.style.margins.right} onChange={(right) => setProject({ ...project, style: { ...project.style, margins: { ...project.style.margins, right } } })} /></div></section>
