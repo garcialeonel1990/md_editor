@@ -29,12 +29,13 @@ function App() {
   const [zoom, setZoom] = useState(0.72)
   const [pageCount, setPageCount] = useState(0)
   const [previewError, setPreviewError] = useState<string | null>(null)
+  const [showMarkdown, setShowMarkdown] = useState(false)
   const [notice, setNotice] = useState('Listo para diseñar')
   const fileInput = useRef<HTMLInputElement>(null)
   const projectInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadLocal().then((saved) => { if (saved) { setProject(saved); setNotice('Proyecto local restaurado') } }).catch(() => undefined) }, [])
-  const renderedDocument = useMemo(() => renderDocument(project.markdown, project.style, project.overrides), [project])
+  const renderedDocument = useMemo(() => renderDocument(project.markdown), [project.markdown])
   const selectedOverride = selected ? project.overrides[selected.id] ?? { id: selected.id } : null
   const selectedBase: Partial<TextStyle> = selected?.type && ['h1', 'h2', 'h3'].includes(selected.type)
     ? project.style.headings[selected.type as 'h1' | 'h2' | 'h3'] : { ...project.style.body, marginBottom: project.style.body.paragraphSpacing }
@@ -80,6 +81,7 @@ function App() {
       <label className="document-name">Documento <input value={project.name} onChange={(event) => setProject({ ...project, name: event.target.value })} /></label>
       <div className="toolbar-actions">
         <button onClick={() => fileInput.current?.click()}>Abrir .md</button>
+        <button onClick={() => setShowMarkdown((visible) => !visible)}>{showMarkdown ? 'Ocultar Markdown' : 'Ver Markdown'}</button>
         <button onClick={save}>Guardar</button>
         <button onClick={() => download(`${project.name || 'documento'}.mdprint`, JSON.stringify(project, null, 2), 'application/json')}>Exportar proyecto</button>
         <button className="primary" onClick={() => window.print()}>Exportar PDF</button>
@@ -88,7 +90,7 @@ function App() {
       <input ref={projectInput} className="visually-hidden" type="file" accept=".mdprint,application/json" onChange={(event) => event.target.files?.[0] && importProject(event.target.files[0])} />
     </header>
 
-    <section className="workspace">
+    <section className={`workspace ${showMarkdown ? '' : 'preview-only'}`}>
       <aside className="editor-panel">
         <div className="panel-title"><span>MARKDOWN</span><button className="text-button" onClick={() => setProject({ ...project, markdown: `${project.markdown}\n\n<!-- pagebreak -->\n\n` })}>+ Salto de página</button></div>
         <CodeMirror value={project.markdown} height="calc(100vh - 168px)" extensions={[markdown()]} onChange={(markdown) => { setProject({ ...project, markdown }); setSelected(null) }} theme="light" basicSetup={{ lineNumbers: true, foldGutter: false }} />
@@ -98,7 +100,7 @@ function App() {
       <section className="preview-panel">
         <div className="panel-title"><span>PREVIEW A4</span><label className="zoom">Zoom <input type="range" min="0.45" max="1" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /> {Math.round(zoom * 100)}%</label></div>
         <div className="paper-canvas">
-          <PagedPreview html={renderedDocument} style={project.style} zoom={zoom} onSelect={selectBlock} onPageCount={setPageCount} onError={setPreviewError} />
+          <PagedPreview html={renderedDocument} style={project.style} overrides={project.overrides} zoom={zoom} onSelect={selectBlock} onPageCount={setPageCount} onError={setPreviewError} />
         </div>
         <footer className="preview-footer">{previewError ? <span className="preview-error">{previewError}</span> : pageCount ? `${pageCount} página${pageCount === 1 ? '' : 's'}` : 'Paginando…'} <span>Desplazate entre las hojas y hacé clic sobre un bloque para editarlo</span></footer>
       </section>

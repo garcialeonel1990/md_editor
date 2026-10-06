@@ -13,7 +13,6 @@
     "@uiw/react-codemirror": "^4.23.10",
     "dompurify": "^3.2.6",
     "markdown-it": "^14.1.0",
-    "pagedjs": "^0.4.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
