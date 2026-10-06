@@ -2,7 +2,9 @@ import DOMPurify from 'dompurify'
 import MarkdownIt from 'markdown-it'
 import type { BlockOverride, DocumentStyle, TextStyle } from './models'
 
-const parser = new MarkdownIt({ html: false, linkify: true, typographer: true })
+// A visible line break is useful in a layout editor: pressing Enter in the
+// Markdown editor moves the following content down in the A4 preview.
+const parser = new MarkdownIt({ html: false, breaks: true, linkify: true, typographer: true })
 const blockTags = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'UL', 'OL', 'BLOCKQUOTE', 'TABLE', 'PRE', 'HR'])
 
 const css = (style: Partial<TextStyle>) => [
