@@ -126,7 +126,13 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
             } else if (scrollContainer) {
               scrollContainer.scrollTop = previousScrollTop
             }
-            selectedBlock?.focus({ preventScroll: true })
+            if (selectedBlock) {
+              // The paginator creates a fresh DOM node on every adjustment.
+              // Make that replacement focusable again so Enter can be pressed
+              // repeatedly without selecting the block another time.
+              selectedBlock.tabIndex = 0
+              selectedBlock.focus({ preventScroll: true })
+            }
           })
         }
       } catch (error) {
