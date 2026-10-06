@@ -14,6 +14,7 @@ export interface TextStyle {
 
 export interface DocumentStyle {
   margins: { top: number; right: number; bottom: number; left: number }
+  monochrome?: boolean
   body: TextStyle & { lineHeight: number; paragraphSpacing: number }
   headings: Record<'h1' | 'h2' | 'h3', TextStyle>
 }
@@ -60,6 +61,7 @@ const heading = (fontSize: number): TextStyle => ({
 
 export const defaultStyle: DocumentStyle = {
   margins: { top: 16, right: 18, bottom: 16, left: 18 },
+  monochrome: false,
   body: {
     fontFamily: 'Inter, Arial, sans-serif', fontSize: 11, fontWeight: 400, fontStyle: 'normal',
     textAlign: 'left', marginTop: 0, marginBottom: 0, lineHeight: 1.45, paragraphSpacing: 7,

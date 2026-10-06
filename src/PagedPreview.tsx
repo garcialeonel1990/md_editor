@@ -66,21 +66,22 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
         const overrideCss = Object.entries(overrides).map(([id, block]) => `.visual-page [data-block-id="${id}"]{${declarations(block)}}`).join('\n')
         const styleTag = document.createElement('style')
         styleTag.textContent = `
-          .visual-page-content { font-family:${style.body.fontFamily}; font-size:${style.body.fontSize}pt; font-weight:${style.body.fontWeight}; font-style:${style.body.fontStyle}; line-height:${style.body.lineHeight}; text-align:${style.body.textAlign}; color:#1f2937; }
+          .visual-page-content { font-family:${style.body.fontFamily}; font-size:${style.body.fontSize}pt; font-weight:${style.body.fontWeight}; font-style:${style.body.fontStyle}; line-height:${style.body.lineHeight}; text-align:${style.body.textAlign}; color:${style.monochrome ? '#111111' : '#1f2937'}; }
           .visual-page-content p { margin-top:${style.body.marginTop}pt; margin-bottom:${style.body.paragraphSpacing}pt; }
           .visual-page-content h1, .visual-page-content h2, .visual-page-content h3 { line-height:1.18; }
-          .visual-page-content h1 { color:#172554; ${declarations(style.headings.h1)} }
-          .visual-page-content h2 { color:#3730a3; ${declarations(style.headings.h2)} }
+          .visual-page-content h1 { color:${style.monochrome ? '#111111' : '#172554'}; ${declarations(style.headings.h1)} }
+          .visual-page-content h2 { color:${style.monochrome ? '#111111' : '#3730a3'}; ${declarations(style.headings.h2)} }
           .visual-page-content h3 { ${declarations(style.headings.h3)} }
           /* A paragraph's manual offset belongs to the preceding page. If it
              becomes the first block on a new A4 sheet, start at that sheet's
              actual top margin instead of carrying the accumulated blank area. */
           .visual-page-content > [data-block-id].page-leading-block { margin-top:0 !important; }
-          .visual-page-content blockquote { border-left:3px solid #818cf8; padding-left:12px; color:#475569; margin-left:0; }
-          .visual-page-content pre { background:#f1f5f9; padding:11px; border-radius:5px; overflow:auto; text-align:left; white-space:pre-wrap; }
+          .visual-page-content blockquote { border-left:3px solid ${style.monochrome ? '#111111' : '#818cf8'}; padding-left:12px; color:${style.monochrome ? '#111111' : '#475569'}; margin-left:0; }
+          .visual-page-content pre { background:${style.monochrome ? 'white' : '#f1f5f9'}; border:${style.monochrome ? '1px solid #111111' : '0'}; padding:11px; border-radius:5px; overflow:auto; text-align:left; white-space:pre-wrap; }
           .visual-page-content table { border-collapse:collapse; width:100%; text-align:left; }
-          .visual-page-content th, .visual-page-content td { border:1px solid #cbd5e1; padding:5px 7px; }
-          .visual-page-content th { background:#f1f5f9; } .visual-page-content img { max-width:100%; max-height:120mm; }
+          .visual-page-content th, .visual-page-content td { border:1px solid ${style.monochrome ? '#111111' : '#cbd5e1'}; padding:5px 7px; }
+          .visual-page-content th { background:${style.monochrome ? 'white' : '#f1f5f9'}; } .visual-page-content img { max-width:100%; max-height:120mm; }
+          .visual-page.monochrome img { filter:grayscale(1) contrast(1.1); }
           .manual-spacer { height:${style.body.fontSize * style.body.lineHeight}pt; }
           ${overrideCss}
         `
@@ -90,7 +91,7 @@ export default function PagedPreview({ html, style, overrides, zoom, onSelect, o
         let content: HTMLDivElement | undefined
         const newPage = () => {
           const page = document.createElement('article')
-          page.className = 'visual-page'
+          page.className = `visual-page${style.monochrome ? ' monochrome' : ''}`
           page.style.padding = `${style.margins.top}mm ${style.margins.right}mm ${style.margins.bottom}mm ${style.margins.left}mm`
           content = document.createElement('div')
           content.className = 'visual-page-content'

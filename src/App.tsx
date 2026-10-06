@@ -99,6 +99,7 @@ function App() {
       <div className="toolbar-actions">
         <button onClick={() => fileInput.current?.click()}>Abrir .md</button>
         <button onClick={() => setShowMarkdown((visible) => !visible)}>{showMarkdown ? 'Ocultar Markdown' : 'Ver Markdown'}</button>
+        <button className={project.style.monochrome ? 'toggle-active' : ''} onClick={() => setProject((current) => ({ ...current, style: { ...current.style, monochrome: !current.style.monochrome } }))}>B/N</button>
         <button onClick={save}>Guardar</button>
         <button onClick={() => download(`${project.name || 'documento'}.mdprint`, JSON.stringify(project, null, 2), 'application/json')}>Exportar proyecto</button>
         <button className="primary" onClick={() => window.print()}>Exportar PDF</button>
