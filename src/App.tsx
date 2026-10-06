@@ -79,6 +79,7 @@ function App() {
     <header className="topbar">
       <div className="brand"><span className="brand-mark">M↓P</span><div><strong>Markdown to PDF</strong><small>Designer</small></div></div>
       <label className="document-name">Documento <input value={project.name} onChange={(event) => setProject({ ...project, name: event.target.value })} /></label>
+      <span className="page-count" aria-live="polite">{pageCount ? `${pageCount} hoja${pageCount === 1 ? '' : 's'}` : 'Paginando…'}</span>
       <div className="toolbar-actions">
         <button onClick={() => fileInput.current?.click()}>Abrir .md</button>
         <button onClick={() => setShowMarkdown((visible) => !visible)}>{showMarkdown ? 'Ocultar Markdown' : 'Ver Markdown'}</button>
