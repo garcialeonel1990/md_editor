@@ -3,8 +3,9 @@ import CodeMirror from '@uiw/react-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import type { BlockOverride, DocumentProject, DocumentStyle, TextStyle } from './models'
 import { initialProject, presets } from './models'
-import { pageVariables, renderPages } from './renderer'
+import { renderDocument } from './renderer'
 import { loadLocal, saveLocal } from './storage'
+import PagedPreview from './PagedPreview'
 
 const fonts = ['Inter, Arial, sans-serif', 'Arial, sans-serif', 'Helvetica, sans-serif', 'Georgia, serif', 'Times New Roman, serif', 'Roboto, sans-serif', 'Open Sans, sans-serif', 'Source Serif 4, serif']
 
@@ -26,12 +27,13 @@ function App() {
   const [project, setProject] = useState<DocumentProject>(initialProject)
   const [selected, setSelected] = useState<Selection>(null)
   const [zoom, setZoom] = useState(0.72)
+  const [pageCount, setPageCount] = useState(0)
   const [notice, setNotice] = useState('Listo para diseñar')
   const fileInput = useRef<HTMLInputElement>(null)
   const projectInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadLocal().then((saved) => { if (saved) { setProject(saved); setNotice('Proyecto local restaurado') } }).catch(() => undefined) }, [])
-  const pages = useMemo(() => renderPages(project.markdown, project.style, project.overrides), [project])
+  const renderedDocument = useMemo(() => renderDocument(project.markdown, project.style, project.overrides), [project])
   const selectedOverride = selected ? project.overrides[selected.id] ?? { id: selected.id } : null
   const selectedBase: Partial<TextStyle> = selected?.type && ['h1', 'h2', 'h3'].includes(selected.type)
     ? project.style.headings[selected.type as 'h1' | 'h2' | 'h3'] : { ...project.style.body, marginBottom: project.style.body.paragraphSpacing }
@@ -95,14 +97,9 @@ function App() {
       <section className="preview-panel">
         <div className="panel-title"><span>PREVIEW A4</span><label className="zoom">Zoom <input type="range" min="0.45" max="1" step="0.01" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /> {Math.round(zoom * 100)}%</label></div>
         <div className="paper-canvas">
-          <div className="paper-stack" style={{ transform: `scale(${zoom})` }}>
-            {pages.map((page, index) => <article key={index} className="page" style={pageVariables(project.style)} onClick={selectBlock}>
-              <div className="page-content" dangerouslySetInnerHTML={{ __html: page.html }} />
-              <span className="page-number">{index + 1}</span>
-            </article>)}
-          </div>
+          <PagedPreview html={renderedDocument} style={project.style} zoom={zoom} onSelect={selectBlock} onPageCount={setPageCount} />
         </div>
-        <footer className="preview-footer">Página {pages.length ? '1' : '0'} / {pages.length} <span>Haz clic sobre un bloque para editarlo</span></footer>
+        <footer className="preview-footer">{pageCount ? `${pageCount} página${pageCount === 1 ? '' : 's'}` : 'Paginando…'} <span>Desplazate entre las hojas y hacé clic sobre un bloque para editarlo</span></footer>
       </section>
 
       <aside className="inspector-panel">
