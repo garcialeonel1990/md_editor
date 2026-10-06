@@ -140,7 +140,6 @@ function App() {
     const markdown = `${project.markdown.slice(0, range.start)}${replacement}${project.markdown.slice(range.end)}`.replace(/\n{3,}/g, '\n\n')
     setProject((current) => ({ ...current, markdown, overrides: {} }))
     setSelected(null)
-    setShowMarkdown(true)
     setNotice(mode === 'delete' ? 'Elemento eliminado del Markdown original' : 'Contenido actualizado en el Markdown original')
   }
 
